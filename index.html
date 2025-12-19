@@ -1,203 +1,174 @@
-
-  <!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html>
+<html>
 <head>
 <meta charset="UTF-8">
 <title>Mythimon</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 body {
-  margin: 0;
-  background: #1c1c1c;
-  color: white;
-  font-family: monospace;
-  text-align: center;
+  background:#111;
+  color:white;
+  font-family:Arial;
+  text-align:center;
 }
-
-#game {
-  max-width: 420px;
-  margin: auto;
+canvas {
+  background:#333;
+  border:2px solid #555;
 }
-
-#map {
-  display: grid;
-  grid-template-columns: repeat(5, 60px);
-  grid-template-rows: repeat(5, 60px);
-  margin: 10px auto;
-}
-
-.tile {
-  width: 60px;
-  height: 60px;
-  border: 1px solid #333;
-}
-
-.grass { background: #2e7d32; }
-.path { background: #555; }
-.player { background: gold; }
-
-#battle {
-  display: none;
-  margin-top: 10px;
-}
-
-button {
-  padding: 10px;
-  margin: 5px;
-  font-size: 14px;
+#ui button {
+  font-size:18px;
+  padding:10px;
+  margin:5px;
 }
 </style>
 </head>
 
 <body>
-<div id="game">
-  <h2>MYTHIMON</h2>
 
-  <div id="map"></div>
+<h1>MYTHIMON</h1>
+<p>Move with arrows or buttons. Grass = encounters.</p>
 
-  <div id="battle">
-    <h3 id="enemyName"></h3>
-    <p id="enemyHP"></p>
+<canvas id="game" width="300" height="300"></canvas>
 
-    <h3 id="playerName"></h3>
-    <p id="playerHP"></p>
+<div id="ui"></div>
 
-    <button onclick="attack('strike')">Strike</button>
-    <button onclick="attack('blast')">Blast</button>
-  </div>
-
-  <p id="log"></p>
-  <p>Use arrow keys to move</p>
-</div>
-
-<script>
-let player = {
-  name: "Sparkit",
-  level: 1,
-  xp: 0,
-  hp: 50,
-  maxHp: 50,
-  strikes: 0,
-  blasts: 0
-};
-
-let enemy = null;
-let inBattle = false;
-
-const mapSize = 5;
-let playerPos = 12;
-
-function drawMap() {
-  const map = document.getElementById("map");
-  map.innerHTML = "";
-
-  for (let i = 0; i < mapSize * mapSize; i++) {
-    let tile = document.createElement("div");
-    tile.className = "tile " + (Math.random() < 0.3 ? "grass" : "path");
-
-    if (i === playerPos) tile.className = "tile player";
-
-    map.appendChild(tile);
-  }
-}
-
-function move(dir) {
-  if (inBattle) return;
-
-  const moves = { up: -5, down: 5, left: -1, right: 1 };
-  let next = playerPos + moves[dir];
-
-  if (next < 0 || next >= 25) return;
-
-  playerPos = next;
-
-  if (Math.random() < 0.3) startBattle();
-  drawMap();
-}
-
-document.addEventListener("keydown", e => {
-  if (e.key === "ArrowUp") move("up");
-  if (e.key === "ArrowDown") move("down");
-  if (e.key === "ArrowLeft") move("left");
-  if (e.key === "ArrowRight") move("right");
-});
-
-function startBattle() {
-  enemy = {
-    name: "Wild Fanglet",
-    hp: 30
-  };
-
-  inBattle = true;
-  document.getElementById("battle").style.display = "block";
-  updateBattle();
-}
-
-function attack(type) {
-  if (!enemy) return;
-
-  let dmg = type === "strike" ? 8 : 12;
-  enemy.hp -= dmg;
-
-  if (type === "strike") player.strikes++;
-  if (type === "blast") player.blasts++;
-
-  if (enemy.hp <= 0) {
-    winBattle();
-    return;
-  }
-
-  player.hp -= 5;
-  updateBattle();
-}
-
-function winBattle() {
-  player.xp += 10;
-  document.getElementById("log").innerText = "Victory! +10 XP";
-
-  if (player.xp >= 20) evolve();
-
-  endBattle();
-}
-
-function evolve() {
-  player.level++;
-  player.xp = 0;
-  player.maxHp += 20;
-  player.hp = player.maxHp;
-
-  if (player.strikes > player.blasts) {
-    player.name = "Voltiger";
-  } else {
-    player.name = "Plasmoth";
-  }
-
-  document.getElementById("log").innerText =
-    "Evolution! You became " + player.name;
-}
-
-function endBattle() {
-  inBattle = false;
-  enemy = null;
-  document.getElementById("battle").style.display = "none";
-}
-
-function updateBattle() {
-  document.getElementById("enemyName").innerText = enemy.name;
-  document.getElementById("enemyHP").innerText = "HP: " + enemy.hp;
-  document.getElementById("playerName").innerText = player.name;
-  document.getElementById("playerHP").innerText =
-    "HP: " + player.hp + "/" + player.maxHp;
-}
-
-drawMap();
-</script>
-</body>
-</html>
 <div id="controls">
   <button onclick="move('up')">⬆️</button><br>
   <button onclick="move('left')">⬅️</button>
   <button onclick="move('down')">⬇️</button>
   <button onclick="move('right')">➡️</button>
 </div>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+const ui = document.getElementById("ui");
+
+const tile = 60;
+const size = 5;
+
+const map = [
+ [1,0,0,0,1],
+ [0,1,0,1,0],
+ [0,0,0,0,0],
+ [1,0,0,1,0],
+ [0,0,1,0,0]
+];
+
+let player = {
+  x:2,y:2,
+  hp:30,
+  maxHp:30,
+  level:1,
+  xp:0,
+  name:"Spryte"
+};
+
+const monsters = [
+ {name:"Flameling", hp:20, atk:5, xp:10, color:"red"},
+ {name:"Leaflit", hp:18, atk:4, xp:8, color:"green"},
+ {name:"Aquabub", hp:22, atk:4, xp:9, color:"blue"}
+];
+
+let wild = null;
+let inBattle = false;
+
+function draw() {
+ ctx.clearRect(0,0,300,300);
+ for(let y=0;y<size;y++){
+  for(let x=0;x<size;x++){
+   ctx.fillStyle = map[y][x] ? "green" : "#555";
+   ctx.fillRect(x*tile,y*tile,tile-2,tile-2);
+  }
+ }
+ ctx.fillStyle="gold";
+ ctx.fillRect(player.x*tile,player.y*tile,tile-2,tile-2);
+}
+
+function move(dir){
+ if(inBattle) return;
+ let dx=0,dy=0;
+ if(dir==="up")dy=-1;
+ if(dir==="down")dy=1;
+ if(dir==="left")dx=-1;
+ if(dir==="right")dx=1;
+
+ let nx=player.x+dx;
+ let ny=player.y+dy;
+ if(nx>=0&&ny>=0&&nx<size&&ny<size){
+  player.x=nx;player.y=ny;
+  if(map[ny][nx]===1 && Math.random()<0.4){
+    startBattle();
+  }
+ }
+ draw();
+}
+
+document.addEventListener("keydown",e=>{
+ if(e.key.includes("Arrow"))
+  move(e.key.replace("Arrow","").toLowerCase());
+});
+
+function startBattle(){
+ inBattle=true;
+ wild=JSON.parse(JSON.stringify(
+  monsters[Math.floor(Math.random()*monsters.length)]
+ ));
+ ui.innerHTML=`
+ <h2>Wild ${wild.name} appeared!</h2>
+ <p>Your HP: ${player.hp}/${player.maxHp}</p>
+ <p>${wild.name} HP: ${wild.hp}</p>
+ <button onclick="attack()">Attack</button>
+ `;
+}
+
+function attack(){
+ wild.hp-=5;
+ if(wild.hp<=0){
+  winBattle();
+  return;
+ }
+ player.hp-=wild.atk;
+ if(player.hp<=0){
+  ui.innerHTML="<h2>You fainted!</h2>";
+  inBattle=false;
+  player.hp=player.maxHp;
+  return;
+ }
+ updateBattleUI();
+}
+
+function updateBattleUI(){
+ ui.innerHTML=`
+ <h2>Battle</h2>
+ <p>${player.name} HP: ${player.hp}/${player.maxHp}</p>
+ <p>${wild.name} HP: ${wild.hp}</p>
+ <button onclick="attack()">Attack</button>
+ `;
+}
+
+function winBattle(){
+ player.xp+=wild.xp;
+ inBattle=false;
+ ui.innerHTML=`<h2>You defeated ${wild.name}!</h2>`;
+ levelUp();
+}
+
+function levelUp(){
+ if(player.xp>=player.level*20){
+  player.level++;
+  player.maxHp+=10;
+  player.hp=player.maxHp;
+  ui.innerHTML+=`<p>Level Up! Lv ${player.level}</p>`;
+  if(player.level===5){
+    player.name="Spryteon";
+    ui.innerHTML+=`<p>Your Mythimon evolved!</p>`;
+  }
+ }
+}
+
+draw();
+</script>
+
+</body>
+</html>
